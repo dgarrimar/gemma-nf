@@ -100,6 +100,10 @@ process split {
 
 process preprocess {
 
+    time '168h'
+    memory '100 GB'
+    cpus params.t
+
     input:
     file vcf from file(params.geno)    
     file pheno from file(params.pheno)
@@ -110,7 +114,7 @@ process preprocess {
     script:
     """
     comm -12 <(bcftools view -h $vcf | grep CHROM | sed 's/\\t/\\n/g' | sed '1,9d' | sort) <(cut -f1 $pheno | sort) > keep.txt
-    plink2 --vcf $vcf --keep keep.txt --make-bed --out geno
+    plink2 --vcf $vcf --keep keep.txt --make-bed --out geno --threads ${params.t} 
     awk '{print int(NR)"\t"\$0}' <(cut -f2 geno.fam) > idx
     join -t \$'\t' -1 2 -2 1 <(sort -k2,2 idx) <(sort $pheno) | sort -k2,2n | cut -f1,2 --complement > pheno.tmp
     paste <(cut -f1-5 geno.fam) pheno.tmp > tmpfile; mv tmpfile geno.fam
@@ -123,6 +127,8 @@ process preprocess {
 
 process kinship {
 
+    time '168h'
+    memory '100 GB'
     cpus params.t
 
     input:
@@ -146,6 +152,8 @@ process kinship {
 
 process test {
 
+    time '168h'
+    memory '10 GB'
     cpus params.t
 
     input:
@@ -166,7 +174,7 @@ process test {
         k=1
         cut -f1 $chunk | sort | uniq | while read chr; do
             paste <(grep -P "^\$chr\t" $chunk | head -1) <(grep -P "^\$chr\t" $chunk | tail -1 | cut -f2) > region
-            plink2 -bfile geno --extract bed1 region --make-bed --out geno.ss
+            plink2 -bfile geno --extract bed1 region --make-bed --out geno.ss --threads ${params.t}
             paste geno.ss.fam <(cut -f1-5 --complement geno.fam) > tmpfile; mv tmpfile geno.ss.fam
             (timeout 10 gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.k\$k -maf ${params.maf} &> STATUS || exit 0)
             if [[ \$(grep ERROR STATUS) ]]; then
@@ -179,7 +187,7 @@ process test {
         cat gemma.k*.assoc.txt > gemma.\${chunknb}.assoc.txt        
     else
         paste <(head -1 $chunk) <(tail -1 $chunk | cut -f2) > region
-        plink2 -bfile geno --extract bed1 region --make-bed --out geno.ss
+        plink2 -bfile geno --extract bed1 region --make-bed --out geno.ss --threads ${params.t}
         paste geno.ss.fam <(cut -f1-5 --complement geno.fam) > tmpfile; mv tmpfile geno.ss.fam
         (timeout 10 gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.\${chunknb} -maf ${params.maf} &> STATUS || exit 0)
         if [[ \$(grep ERROR STATUS) ]]; then
