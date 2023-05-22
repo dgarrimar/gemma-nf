@@ -1,0 +1,7 @@
+clean
+*log
+data
+.nextflow*
+result
+work
+trace.txt*
