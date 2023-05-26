@@ -101,7 +101,8 @@ process split {
 process preprocess {
 
     time '168h'
-    memory '100 GB'
+    queue 'rg-el7,long-sl7'
+    memory '50 GB'
     cpus params.t
 
     input:
@@ -128,7 +129,8 @@ process preprocess {
 process kinship {
 
     time '168h'
-    memory '100 GB'
+    queue 'rg-el7,long-sl7'
+    memory '50 GB'
     cpus params.t
 
     input:
@@ -153,6 +155,7 @@ process kinship {
 process test {
 
     time '168h'
+    queue 'rg-el7,long-sl7'
     memory '10 GB'
     cpus params.t
 
@@ -176,7 +179,7 @@ process test {
             paste <(grep -P "^\$chr\t" $chunk | head -1) <(grep -P "^\$chr\t" $chunk | tail -1 | cut -f2) > region
             plink2 -bfile geno --extract bed1 region --make-bed --out geno.ss --threads ${params.t}
             paste geno.ss.fam <(cut -f1-5 --complement geno.fam) > tmpfile; mv tmpfile geno.ss.fam
-            (timeout 10 gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.k\$k -maf ${params.maf} &> STATUS || exit 0)
+            (timeout 120 gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.k\$k -maf ${params.maf} &> STATUS || exit 0)
             if [[ \$(grep ERROR STATUS) ]]; then
                 touch gemma.k\$k.assoc.txt
             else
@@ -189,7 +192,7 @@ process test {
         paste <(head -1 $chunk) <(tail -1 $chunk | cut -f2) > region
         plink2 -bfile geno --extract bed1 region --make-bed --out geno.ss --threads ${params.t}
         paste geno.ss.fam <(cut -f1-5 --complement geno.fam) > tmpfile; mv tmpfile geno.ss.fam
-        (timeout 10 gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.\${chunknb} -maf ${params.maf} &> STATUS || exit 0)
+        (timeout 120 gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.\${chunknb} -maf ${params.maf} &> STATUS || exit 0)
         if [[ \$(grep ERROR STATUS) ]]; then
             touch gemma.\${chunknb}.assoc.txt
         else
