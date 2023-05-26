@@ -178,7 +178,7 @@ process test {
         cut -f1 $chunk | sort | uniq | while read chr; do
             paste <(grep -P "^\$chr\t" $chunk | head -1) <(grep -P "^\$chr\t" $chunk | tail -1 | cut -f2) > region
             plink2 -bfile geno --extract bed1 region --make-bed --out geno.ss --threads ${params.t}
-            paste geno.ss.fam <(cut -f1-5 --complement geno.fam) > tmpfile; mv tmpfile geno.ss.fam
+            paste <(cut -f1-5 geno.ss.fam) <(cut -f1-5 --complement geno.fam) > tmpfile; mv tmpfile geno.ss.fam
             (timeout 120 gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.k\$k -maf ${params.maf} &> STATUS || exit 0)
             if [[ \$(grep ERROR STATUS) ]]; then
                 touch gemma.k\$k.assoc.txt
@@ -191,7 +191,7 @@ process test {
     else
         paste <(head -1 $chunk) <(tail -1 $chunk | cut -f2) > region
         plink2 -bfile geno --extract bed1 region --make-bed --out geno.ss --threads ${params.t}
-        paste geno.ss.fam <(cut -f1-5 --complement geno.fam) > tmpfile; mv tmpfile geno.ss.fam
+        paste <(cut -f1-5 geno.ss.fam) <(cut -f1-5 --complement geno.fam) > tmpfile; mv tmpfile geno.ss.fam
         (timeout 120 gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.\${chunknb} -maf ${params.maf} &> STATUS || exit 0)
         if [[ \$(grep ERROR STATUS) ]]; then
             touch gemma.\${chunknb}.assoc.txt
