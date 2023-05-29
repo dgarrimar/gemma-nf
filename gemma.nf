@@ -137,14 +137,14 @@ process kinship {
     tuple file(bed), file(bim), file(fam) from geno_ch
 
     output:
-    file("kinship.sXX.txt.gz") into kinship_ch
+    tuple file("kinship.sXX.eigenD.txt"), ("kinship.sXX.eigenU.txt") into kinship_ch
 
     script:
     """
     # Compute kinship
     export OPENBLAS_NUM_THREADS=${params.t}
     gemma -gk 2 -bfile \$(basename $bed | sed 's/.bed//') -outdir . -o kinship
-    gzip kinship.sXX.txt
+    gemma -bfile \$(basename $bed | sed 's/.bed//') -k kinship.sXX.txt -eigen -outdir . -o kinship.sXX
     """
 }
 
@@ -161,7 +161,7 @@ process test {
 
     input:
     tuple file(bed),file(bim),file(fam) from geno_ch
-    file(kinship) from kinship_ch
+    tuple file(kinship_d), file(kinship_u) from kinship_ch
     each file(chunk) from chunks_ch
 
     output:
@@ -179,11 +179,11 @@ process test {
             paste <(grep -P "^\$chr\t" $chunk | head -1) <(grep -P "^\$chr\t" $chunk | tail -1 | cut -f2) > region
             plink2 -bfile geno --extract bed1 region --make-bed --out geno.ss --threads ${params.t}
             paste <(cut -f1-5 geno.ss.fam) <(cut -f1-5 --complement geno.fam) > tmpfile; mv tmpfile geno.ss.fam
-            (timeout 120 gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.k\$k -maf ${params.maf} &> STATUS || exit 0)
+            (timeout 120 gemma -lmm -b geno.ss -d $kinship_d -u $kinship_u -n \$pids -outdir . -o gemma.k\$k -maf ${params.maf} &> STATUS || exit 0)
             if [[ \$(grep ERROR STATUS) ]]; then
                 touch gemma.k\$k.assoc.txt
             else
-                gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.k\$k -maf ${params.maf}
+                gemma -lmm -b geno.ss -d $kinship_d -u $kinship_u -n \$pids -outdir . -o gemma.k\$k -maf ${params.maf}
             fi
             ((k++))
         done
@@ -192,11 +192,11 @@ process test {
         paste <(head -1 $chunk) <(tail -1 $chunk | cut -f2) > region
         plink2 -bfile geno --extract bed1 region --make-bed --out geno.ss --threads ${params.t}
         paste <(cut -f1-5 geno.ss.fam) <(cut -f1-5 --complement geno.fam) > tmpfile; mv tmpfile geno.ss.fam
-        (timeout 120 gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.\${chunknb} -maf ${params.maf} &> STATUS || exit 0)
+        (timeout 120 gemma -lmm -b geno.ss -d $kinship_d -u $kinship_u -n \$pids -outdir . -o gemma.\${chunknb} -maf ${params.maf} &> STATUS || exit 0)
         if [[ \$(grep ERROR STATUS) ]]; then
             touch gemma.\${chunknb}.assoc.txt
         else
-            gemma -lmm -b geno.ss -k $kinship -n \$pids -outdir . -o gemma.\${chunknb} -maf ${params.maf}
+            gemma -lmm -b geno.ss -d $kinship_d -u $kinship_u -n \$pids -outdir . -o gemma.\${chunknb} -maf ${params.maf}
         fi
     fi
     """
