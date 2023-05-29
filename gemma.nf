@@ -100,8 +100,8 @@ process split {
 
 process preprocess {
 
-    time '168h'
-    queue 'rg-el7,long-sl7'
+    time '6h'
+    queue 'rg-el7,long-sl7,short-sl7'
     memory '50 GB'
     cpus params.t
 
@@ -128,8 +128,8 @@ process preprocess {
 
 process kinship {
 
-    time '168h'
-    queue 'rg-el7,long-sl7'
+    time '6h'
+    queue 'rg-el7,long-sl7,short-sl7'
     memory '50 GB'
     cpus params.t
 
@@ -143,8 +143,11 @@ process kinship {
     """
     # Compute kinship
     export OPENBLAS_NUM_THREADS=${params.t}
-    gemma -gk 2 -bfile \$(basename $bed | sed 's/.bed//') -outdir . -o kinship
-    gemma -bfile \$(basename $bed | sed 's/.bed//') -k kinship.sXX.txt -eigen -outdir . -o kinship.sXX
+    prefix=\$(basename $bed | sed 's/.bed//')
+    plink2 --bfile \$prefix --maf ${params.maf} --indep-pairwise 50 5 0.8 --threads ${params.t}
+    plink2 --bfile \$prefix --extract plink2.prune.in --out geno.pruned --make-bed --threads ${params.t}
+    gemma -gk 2 -bfile geno.pruned -outdir . -o kinship
+    gemma -bfile geno.pruned -k kinship.sXX.txt -eigen -outdir . -o kinship.sXX
     """
 }
 
@@ -154,8 +157,8 @@ process kinship {
 
 process test {
 
-    time '168h'
-    queue 'rg-el7,long-sl7'
+    time '6h'
+    queue 'rg-el7,long-sl7,short-sl7'
     memory '10 GB'
     cpus params.t
 
