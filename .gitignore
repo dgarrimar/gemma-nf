@@ -1,6 +1,6 @@
 singularity
 clean
-*log
+*log*
 data
 .nextflow*
 result
