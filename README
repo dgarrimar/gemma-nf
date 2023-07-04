@@ -1,4 +1,0 @@
-module purge
-module load Java
-module load Singularity/3.7.0
-nextflow run gemma.nf --geno data/ukb.chr22.vcf.gz --l 10000 --t 1 --pheno data/phenotypes.resid_k10000.tsv -resume -bg -profile crg -with-singularity -with-trace -w /no_backup_isis/rg/dgarrido/nf/works/gemma-nf.work > log

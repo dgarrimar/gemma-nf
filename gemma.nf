@@ -1,38 +1,50 @@
 /*
- * GEMMA 
- * Diego Garrido Martín 
+ * Copyright (c) 2021, Diego Garrido-Martín
+ *
+ * This file is part of 'gemma-nf':
+ * A Nextflow pipeline for multivariate GWAS using GEMMA
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *  Define parameters
- */
 
-// General params
+// Define parameters
+
 params.genotype = null
 params.phenotype = null
 params.maf = 0.01
 params.dir = 'result'
 params.out = 'gemma.tsv'
-params.l = 100000
+params.l = 500
 params.t = 1
 params.help = false
 
-/*
- *  Print usage and help
- */
+
+// Print usage
 
 if (params.help) {
   log.info ''
   log.info 'G E M M A - N F'
-  log.info '======================================================================='
-  log.info 'Genome-wide Efficient Mixed-Model Analysis for Association Studies'
+  log.info '============================================================================================'
+  log.info 'Performs multi-trait GWAS using GEMMA (https://github.com/genetics-statistics/GEMMA)'
   log.info ''
   log.info 'Usage: '
   log.info '    nextflow run gemma.nf [options]'
   log.info ''
   log.info 'Parameters:'
-  log.info " --geno GENOTYPES            genotype data in PLINK format (default: ${params.geno})"
-  log.info " --pheno PHENOTYPES          phenotype data (default: ${params.pheno})"
+  log.info " --geno GENOTYPES            genotype data in VCF format, indexed"
+  log.info " --pheno PHENOTYPES          (covariate-adjusted) phenotype data"
   log.info " --maf MAF                   MAF filter (default: ${params.maf}"
   log.info " --l VARIANTS/CHUNK          number of variants tested per chunk (default: ${params.l})"
   log.info " --t THREADS                 number of threads (deafault: ${params.t})"
@@ -42,9 +54,17 @@ if (params.help) {
   exit(1)
 }
 
-/*
- *  Print parameter selection
- */
+
+// Check mandatory parameters
+
+if (!params.geno) {
+    exit 1, "Genotype file not specified."
+} else if (!params.pheno){
+    exit 1, "Phenotype file not specified."
+}
+
+
+// Print parameter selection
 
 log.info ''
 log.info 'Parameters'
@@ -59,22 +79,7 @@ log.info "Output file prefix           : ${params.out}"
 log.info ''
 
 
-/*
- * Checks 
- */
-
-// Mandatory options
-
-if (!params.geno) {
-    exit 1, "Genotype file not specified."
-} else if (!params.pheno){
-    exit 1, "Phenotype file not specified."
-}
-
-
-/*
- *  Split
- */
+// Split VCF
 
 process split {
 
@@ -94,15 +99,11 @@ process split {
     """
 }
 
-/*
- *  Prepare
- */
+
+// Pre-process genotypes, phenotypes
 
 process preprocess {
 
-    time '6h'
-    queue 'rg-el7,long-sl7,short-sl7'
-    memory '50 GB'
     cpus params.t
 
     input:
@@ -122,15 +123,11 @@ process preprocess {
     """
 }
 
-/*
- *  Kinship
- */
+
+// Obtain kinship matrix
 
 process kinship {
 
-    time '6h'
-    queue 'rg-el7,long-sl7,short-sl7'
-    memory '50 GB'
     cpus params.t
 
     input:
@@ -151,15 +148,11 @@ process kinship {
     """
 }
 
-/*
- *  Test
- */
+
+// GWAS: testing (GEMMA)
 
 process test {
 
-    time '6h'
-    queue 'rg-el7,long-sl7,short-sl7'
-    memory '10 GB'
     cpus params.t
 
     input:

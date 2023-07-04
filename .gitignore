@@ -1,7 +1,8 @@
 singularity
 clean
 *log*
-data
+data/*
+!data/eg.*
 .nextflow*
 result
 work
