@@ -118,7 +118,7 @@ process preprocess {
     comm -12 <(bcftools view -h $vcf | grep CHROM | sed 's/\\t/\\n/g' | sed '1,9d' | sort) <(cut -f1 $pheno | sort) > keep.txt
     plink2 --vcf $vcf --keep keep.txt --make-bed --out geno --threads ${params.t} 
     awk '{print int(NR)"\t"\$0}' <(cut -f2 geno.fam) > idx
-    join -t \$'\t' -1 2 -2 1 <(sort -k2,2 idx) <(sort $pheno) | sort -k2,2n | cut -f1,2 --complement > pheno.tmp
+    join -t \$'\t' -1 2 -2 1 <(sort -k2,2 idx) <(sort -k1,1 $pheno) | sort -k2,2n | cut -f1,2 --complement > pheno.tmp
     paste <(cut -f1-5 geno.fam) pheno.tmp > tmpfile; mv tmpfile geno.fam
     """
 }
