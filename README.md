@@ -41,6 +41,9 @@ cd gemma-nf
 nextflow run gemma.nf -with-docker
 ```
 
+**Important**: Since release `22.12.0-edge`, DSL1 is not further supported in Nextflow. Until `gemma-nf` is migrated to DSL2, the pipeline should be run using an older Nextflow release.
+This can be done using `NXF_VER` before Nextflow commands, e.g. `NXF_VER=22.04.0 nextflow run dgarrimar/gemma-nf -with-docker`.
+
 ## Pipeline usage
 
 Launching the pipeline with the `--help` parameter shows the help message:
